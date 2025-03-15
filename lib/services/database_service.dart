@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import '../models/task.dart';
 import '../models/habit.dart';
@@ -16,13 +17,29 @@ class DatabaseService {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDatabase();
+    _database = await _initializeDatabase();
     return _database!;
   }
 
-  Future<Database> _initDatabase() async {
-    Directory documentsDirectory = await getApplicationDocumentsDirectory();
-    String path = join(documentsDirectory.path, 'habit_tracker.db');
+  Future<void> initialize() async {
+    _database = await _initializeDatabase();
+  }
+
+  Future<Database> _initializeDatabase() async {
+    if (kIsWeb) {
+      // For web platform, use in-memory database or alternative storage
+      // This is a temporary solution for testing on web
+      print('Running on web platform - using in-memory database');
+      return await openDatabase(
+        inMemoryDatabasePath,
+        version: 1,
+        onCreate: _createDatabase,
+      );
+    }
+    
+    // For mobile platforms, use file-based database
+    final documentsDirectory = await getApplicationDocumentsDirectory();
+    final path = join(documentsDirectory.path, 'habit_tracker.db');
     return await openDatabase(
       path,
       version: 1,
@@ -151,5 +168,13 @@ class DatabaseService {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  // Clear all data from the database
+  Future<void> clearAllData() async {
+    final db = await database;
+    await db.delete('tasks');
+    await db.delete('habits');
+    print('All data cleared from database');
   }
 } 

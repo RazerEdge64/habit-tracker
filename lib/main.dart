@@ -6,22 +6,49 @@ import 'providers/habit_provider.dart';
 import 'providers/settings_provider.dart';
 import 'utils/theme.dart';
 import 'screens/home_screen.dart';
+import 'services/database_service.dart';
+import 'services/sample_data_service.dart';
 
-void main() {
+void main() async {
+  // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  
+  // Initialize database service
+  final databaseService = DatabaseService();
+  try {
+    await databaseService.initialize();
+    print('Database initialized successfully');
+  } catch (e) {
+    print('Error initializing database: $e');
+    // Continue with app startup even if database fails
+    // This allows the app to run on platforms where SQLite isn't fully supported
+  }
+  
+  // Add sample data if needed
+  await SampleDataService.addSampleDataIfNeeded(databaseService);
+  
+  // Run the app
+  runApp(MyApp(databaseService: databaseService));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final DatabaseService databaseService;
+  
+  const MyApp({super.key, required this.databaseService});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => TaskProvider()),
-        ChangeNotifierProvider(create: (_) => HabitProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(
+          create: (_) => TaskProvider(databaseService: databaseService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => HabitProvider(databaseService: databaseService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(),
+        ),
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) {

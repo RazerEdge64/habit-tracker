@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../providers/settings_provider.dart';
+import '../services/database_service.dart';
+import '../services/sample_data_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -126,10 +130,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
                 child: const Text('Save Changes'),
               ),
+
+              // Debug section
+              _buildResetSampleDataButton(context),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildResetSampleDataButton(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.refresh),
+      title: const Text('Reset Sample Data'),
+      subtitle: const Text('Clear and reload sample tasks and habits'),
+      onTap: () async {
+        // Show confirmation dialog
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Reset Sample Data'),
+            content: const Text(
+              'This will clear all existing tasks and habits and reload the sample data. '
+              'This action cannot be undone. Are you sure?'
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Reset'),
+              ),
+            ],
+          ),
+        );
+        
+        if (confirmed == true) {
+          // Reset sample data flag
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('has_loaded_sample_data', false);
+          
+          // Get database service and reload sample data
+          final databaseService = DatabaseService();
+          await databaseService.clearAllData();
+          await SampleDataService.addSampleDataIfNeeded(databaseService);
+          
+          // Show success message
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Sample data has been reset'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      },
     );
   }
 } 

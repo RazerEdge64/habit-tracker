@@ -3,14 +3,15 @@ import '../models/task.dart';
 import '../services/database_service.dart';
 
 class TaskProvider with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
+  final DatabaseService _databaseService;
   List<Task> _tasks = [];
   DateTime _selectedDate = DateTime.now();
 
   List<Task> get tasks => _tasks;
   DateTime get selectedDate => _selectedDate;
 
-  TaskProvider() {
+  TaskProvider({required DatabaseService databaseService}) 
+      : _databaseService = databaseService {
     _loadTasks();
   }
 

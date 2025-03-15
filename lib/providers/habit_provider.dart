@@ -3,7 +3,7 @@ import '../models/habit.dart';
 import '../services/database_service.dart';
 
 class HabitProvider with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
+  final DatabaseService _databaseService;
   List<Habit> _habits = [];
   List<Habit> _todayHabits = [];
   DateTime _selectedDate = DateTime.now();
@@ -12,7 +12,8 @@ class HabitProvider with ChangeNotifier {
   List<Habit> get todayHabits => _todayHabits;
   DateTime get selectedDate => _selectedDate;
 
-  HabitProvider() {
+  HabitProvider({required DatabaseService databaseService})
+      : _databaseService = databaseService {
     _loadHabits();
   }
 
